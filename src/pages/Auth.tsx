@@ -33,15 +33,21 @@ const Auth = () => {
       .replace(/(-\d{2})\d+?$/, "$1");
   };
 
+  const removeCPFMask = (cpf: string) => {
+    return cpf.replace(/\D/g, "");
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
+      const cpfSemMascara = removeCPFMask(loginData.cpf);
+      
       const { data: userData, error: userError } = await supabase
         .from("usuarios")
         .select("email")
-        .eq("cpf", loginData.cpf)
+        .eq("cpf", cpfSemMascara)
         .single();
 
       if (userError || !userData) {
@@ -70,13 +76,15 @@ const Auth = () => {
     setLoading(true);
 
     try {
+      const cpfSemMascara = removeCPFMask(signupData.cpf);
+      
       const { error } = await supabase.auth.signUp({
         email: signupData.email,
         password: signupData.password,
         options: {
           emailRedirectTo: `${window.location.origin}/`,
           data: {
-            cpf: signupData.cpf,
+            cpf: cpfSemMascara,
             nome: signupData.nome,
             perfil: "usuario",
           },
