@@ -1,0 +1,347 @@
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import Sidebar from "@/components/Sidebar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { toast } from "sonner";
+import { ArrowLeft, Upload, X } from "lucide-react";
+
+const LoteForm = () => {
+  const navigate = useNavigate();
+  const { id } = useParams();
+  const isEdit = id && id !== "novo";
+  const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [formData, setFormData] = useState({
+    numero_iptu: "",
+    numero_cadastro: "",
+    loteamento: "",
+    quadra: "",
+    numero_lote: "",
+    area_total: "",
+  });
+  const [imagens, setImagens] = useState<string[]>([]);
+
+  useEffect(() => {
+    checkAdminStatus();
+    if (isEdit) {
+      loadLote();
+    }
+  }, [isEdit, id]);
+
+  const checkAdminStatus = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data } = await supabase
+        .from("usuarios")
+        .select("perfil")
+        .eq("id", user.id)
+        .single();
+      
+      if (data?.perfil !== "admin") {
+        toast.error("Acesso negado");
+        navigate("/dashboard");
+      } else {
+        setIsAdmin(true);
+      }
+    }
+  };
+
+  const loadLote = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("lotes")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (error) throw error;
+      
+      if (data) {
+        setFormData({
+          numero_iptu: data.numero_iptu,
+          numero_cadastro: data.numero_cadastro,
+          loteamento: data.loteamento,
+          quadra: data.quadra,
+          numero_lote: data.numero_lote,
+          area_total: data.area_total.toString(),
+        });
+        setImagens(data.imagens || []);
+      }
+    } catch (error) {
+      toast.error("Erro ao carregar lote");
+      navigate("/lotes");
+    }
+  };
+
+  const formatIPTU = (value: string) => {
+    const numbers = value.replace(/\D/g, "");
+    return numbers
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})$/, ".$1");
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    if (imagens.length + files.length > 2) {
+      toast.error("Máximo de 2 imagens por lote");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const uploadedUrls: string[] = [];
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const fileExt = file.name.split(".").pop();
+        const fileName = `${Math.random()}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("lotes")
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from("lotes")
+          .getPublicUrl(filePath);
+
+        uploadedUrls.push(publicUrl);
+      }
+
+      setImagens([...imagens, ...uploadedUrls]);
+      toast.success("Imagens enviadas com sucesso!");
+    } catch (error: any) {
+      toast.error("Erro ao enviar imagens");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeImage = (url: string) => {
+    setImagens(imagens.filter((img) => img !== url));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
+      const loteData = {
+        numero_iptu: formData.numero_iptu,
+        numero_cadastro: formData.numero_cadastro,
+        loteamento: formData.loteamento,
+        quadra: formData.quadra,
+        numero_lote: formData.numero_lote,
+        area_total: parseFloat(formData.area_total),
+        imagens,
+        created_by: user.id,
+      };
+
+      if (isEdit) {
+        const { error } = await supabase
+          .from("lotes")
+          .update(loteData)
+          .eq("id", id);
+
+        if (error) throw error;
+        toast.success("Lote atualizado com sucesso!");
+      } else {
+        const { error } = await supabase
+          .from("lotes")
+          .insert([loteData]);
+
+        if (error) throw error;
+        toast.success("Lote cadastrado com sucesso!");
+      }
+
+      navigate("/lotes");
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao salvar lote");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex min-h-screen bg-background">
+      <Sidebar isAdmin={isAdmin} />
+      <main className="flex-1 p-8">
+        <div className="max-w-3xl mx-auto space-y-6">
+          <Button
+            variant="ghost"
+            onClick={() => navigate("/lotes")}
+            className="mb-4"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Voltar
+          </Button>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                {isEdit ? "Editar Lote" : "Cadastrar Novo Lote"}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="numero_iptu">Número IPTU *</Label>
+                    <Input
+                      id="numero_iptu"
+                      placeholder="000.000.000.000"
+                      value={formData.numero_iptu}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          numero_iptu: formatIPTU(e.target.value),
+                        })
+                      }
+                      maxLength={15}
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="numero_cadastro">Número de Cadastro *</Label>
+                    <Input
+                      id="numero_cadastro"
+                      placeholder="Ex: CAD-12345"
+                      value={formData.numero_cadastro}
+                      onChange={(e) =>
+                        setFormData({ ...formData, numero_cadastro: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="loteamento">Loteamento *</Label>
+                    <Input
+                      id="loteamento"
+                      placeholder="Nome do loteamento"
+                      value={formData.loteamento}
+                      onChange={(e) =>
+                        setFormData({ ...formData, loteamento: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="quadra">Quadra *</Label>
+                    <Input
+                      id="quadra"
+                      placeholder="Ex: A, B, 01"
+                      value={formData.quadra}
+                      onChange={(e) =>
+                        setFormData({ ...formData, quadra: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="numero_lote">Número do Lote *</Label>
+                    <Input
+                      id="numero_lote"
+                      placeholder="Ex: 001, 123"
+                      value={formData.numero_lote}
+                      onChange={(e) =>
+                        setFormData({ ...formData, numero_lote: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="area_total">Área Total (m²) *</Label>
+                    <Input
+                      id="area_total"
+                      type="number"
+                      step="0.01"
+                      placeholder="Ex: 250.50"
+                      value={formData.area_total}
+                      onChange={(e) =>
+                        setFormData({ ...formData, area_total: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Imagens (máximo 2)</Label>
+                  <div className="flex items-center gap-4">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleImageUpload}
+                      disabled={uploading || imagens.length >= 2}
+                      className="flex-1"
+                    />
+                    {uploading && (
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
+                    )}
+                  </div>
+                  {imagens.length > 0 && (
+                    <div className="grid grid-cols-2 gap-4 mt-4">
+                      {imagens.map((url, index) => (
+                        <div key={index} className="relative group">
+                          <img
+                            src={url}
+                            alt={`Imagem ${index + 1}`}
+                            className="w-full h-40 object-cover rounded-lg"
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => removeImage(url)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-4">
+                  <Button type="submit" disabled={loading} className="flex-1">
+                    {loading ? "Salvando..." : isEdit ? "Atualizar Lote" : "Cadastrar Lote"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => navigate("/lotes")}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default LoteForm;
