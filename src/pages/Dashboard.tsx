@@ -21,13 +21,11 @@ const Dashboard = () => {
   const loadUserProfile = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("usuarios")
         .select("nome, perfil")
         .eq("id", user.id)
         .single();
-      
-      console.log("Dashboard - User Profile:", { userId: user.id, data, error });
       
       if (data) {
         setUserName(data.nome);
