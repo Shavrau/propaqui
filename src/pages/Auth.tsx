@@ -12,7 +12,7 @@ import { Building2 } from "lucide-react";
 const Auth = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [loginData, setLoginData] = useState({ cpf: "", password: "" });
+  const [loginData, setLoginData] = useState({ email: "", password: "" });
   const [signupData, setSignupData] = useState({ cpf: "", nome: "", email: "", password: "" });
 
   useEffect(() => {
@@ -42,21 +42,8 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      const cpfSemMascara = removeCPFMask(loginData.cpf);
-      
-      const { data: userData, error: userError } = await supabase
-        .from("usuarios")
-        .select("email")
-        .eq("cpf", cpfSemMascara)
-        .single();
-
-      if (userError || !userData) {
-        toast.error("CPF não encontrado");
-        return;
-      }
-
       const { error } = await supabase.auth.signInWithPassword({
-        email: userData.email,
+        email: loginData.email,
         password: loginData.password,
       });
 
@@ -124,15 +111,15 @@ const Auth = () => {
             <TabsContent value="login">
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="login-cpf">CPF</Label>
+                  <Label htmlFor="login-email">Email</Label>
                   <Input
-                    id="login-cpf"
-                    placeholder="000.000.000-00"
-                    value={loginData.cpf}
+                    id="login-email"
+                    type="email"
+                    placeholder="seu@email.com"
+                    value={loginData.email}
                     onChange={(e) =>
-                      setLoginData({ ...loginData, cpf: formatCPF(e.target.value) })
+                      setLoginData({ ...loginData, email: e.target.value })
                     }
-                    maxLength={14}
                     required
                   />
                 </div>
