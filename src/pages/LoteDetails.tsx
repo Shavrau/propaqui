@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import Sidebar from "@/components/Sidebar";
+import AlterarAreaDialog from "@/components/AlterarAreaDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { ArrowLeft, Edit, MapPin, Ruler, Calendar, Plus } from "lucide-react";
+import { ArrowLeft, Edit, MapPin, Ruler, Calendar, Plus, History } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -35,11 +36,24 @@ interface Historico {
   created_at: string;
 }
 
+interface HistoricoAlteracao {
+  id: string;
+  area_anterior: number;
+  area_nova: number;
+  motivo: string | null;
+  data_alteracao: string;
+  alterado_por: string;
+  usuarios: {
+    nome: string;
+  };
+}
+
 const LoteDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [lote, setLote] = useState<Lote | null>(null);
   const [historicos, setHistoricos] = useState<Historico[]>([]);
+  const [historicosAlteracao, setHistoricosAlteracao] = useState<HistoricoAlteracao[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showHistoricoDialog, setShowHistoricoDialog] = useState(false);
@@ -53,6 +67,7 @@ const LoteDetails = () => {
     loadUserProfile();
     loadLoteDetails();
     loadHistoricos();
+    loadHistoricosAlteracao();
     createAccessLog();
   }, [id]);
 
@@ -101,6 +116,26 @@ const LoteDetails = () => {
       setHistoricos(data || []);
     } catch (error) {
       console.error("Erro ao carregar históricos:", error);
+    }
+  };
+
+  const loadHistoricosAlteracao = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("historico_alteracao_area")
+        .select(`
+          *,
+          usuarios:alterado_por (
+            nome
+          )
+        `)
+        .eq("lote_id", id)
+        .order("data_alteracao", { ascending: false });
+
+      if (error) throw error;
+      setHistoricosAlteracao(data || []);
+    } catch (error) {
+      console.error("Erro ao carregar histórico de alterações:", error);
     }
   };
 
@@ -222,11 +257,23 @@ const LoteDetails = () => {
                     </h3>
                     <p className="text-lg font-semibold">{lote.numero_lote}</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Ruler className="h-5 w-5 text-accent" />
-                    <div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Ruler className="h-5 w-5 text-accent" />
                       <h3 className="text-sm font-medium text-muted-foreground">Área Total</h3>
+                    </div>
+                    <div className="flex items-center gap-3">
                       <p className="text-lg font-semibold">{lote.area_total} m²</p>
+                      {isAdmin && (
+                        <AlterarAreaDialog
+                          loteId={lote.id}
+                          areaAtual={lote.area_total}
+                          onAreaAlterada={() => {
+                            loadLoteDetails();
+                            loadHistoricosAlteracao();
+                          }}
+                        />
+                      )}
                     </div>
                   </div>
                 </div>
@@ -249,6 +296,62 @@ const LoteDetails = () => {
               )}
             </CardContent>
           </Card>
+
+          {historicosAlteracao.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <History className="h-5 w-5" />
+                  Histórico de Alterações de Área
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {historicosAlteracao.map((alteracao) => (
+                    <div
+                      key={alteracao.id}
+                      className="p-4 border border-border rounded-lg space-y-2"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Calendar className="h-4 w-4" />
+                          {new Date(alteracao.data_alteracao).toLocaleDateString("pt-BR", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </div>
+                        <span className="text-sm text-muted-foreground">
+                          Por: {alteracao.usuarios.nome}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Área Anterior</p>
+                          <p className="text-lg font-semibold">{alteracao.area_anterior} m²</p>
+                        </div>
+                        <span className="text-2xl text-muted-foreground">→</span>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Área Nova</p>
+                          <p className="text-lg font-semibold text-primary">
+                            {alteracao.area_nova} m²
+                          </p>
+                        </div>
+                      </div>
+                      {alteracao.motivo && (
+                        <div className="pt-2 border-t">
+                          <p className="text-sm text-muted-foreground">Motivo:</p>
+                          <p className="text-sm">{alteracao.motivo}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">

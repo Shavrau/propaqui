@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      historico_alteracao_area: {
+        Row: {
+          alterado_por: string
+          area_anterior: number
+          area_nova: number
+          created_at: string
+          data_alteracao: string
+          id: string
+          lote_id: string
+          motivo: string | null
+        }
+        Insert: {
+          alterado_por: string
+          area_anterior: number
+          area_nova: number
+          created_at?: string
+          data_alteracao?: string
+          id?: string
+          lote_id: string
+          motivo?: string | null
+        }
+        Update: {
+          alterado_por?: string
+          area_anterior?: number
+          area_nova?: number
+          created_at?: string
+          data_alteracao?: string
+          id?: string
+          lote_id?: string
+          motivo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historico_alteracao_area_alterado_por_fkey"
+            columns: ["alterado_por"]
+            isOneToOne: false
+            referencedRelation: "usuarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "historico_alteracao_area_lote_id_fkey"
+            columns: ["lote_id"]
+            isOneToOne: false
+            referencedRelation: "lotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       historico_construcao: {
         Row: {
           area_construida: number
