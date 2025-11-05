@@ -15,11 +15,31 @@ const ProtectedRoute = ({ children, requireAdmin = false }: ProtectedRouteProps)
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
+    const checkUserProfile = async (userId: string) => {
+      const { data } = await supabase
+        .from("usuarios")
+        .select("perfil")
+        .eq("id", userId)
+        .single();
+      
+      setIsAdmin(data?.perfil === "admin");
+      setLoading(false);
+    };
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          setTimeout(() => {
+            checkUserProfile(session.user.id);
+          }, 0);
+        } else {
+          setIsAdmin(false);
+          setLoading(false);
+        }
       }
     );
 
@@ -29,16 +49,7 @@ const ProtectedRoute = ({ children, requireAdmin = false }: ProtectedRouteProps)
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        // Check if user is admin
-        supabase
-          .from("usuarios")
-          .select("perfil")
-          .eq("id", session.user.id)
-          .single()
-          .then(({ data }) => {
-            setIsAdmin(data?.perfil === "admin");
-            setLoading(false);
-          });
+        checkUserProfile(session.user.id);
       } else {
         setLoading(false);
       }
