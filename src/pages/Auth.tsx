@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Building2 } from "lucide-react";
+import { getSafeErrorMessage, logError } from "@/lib/errorHandler";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -52,7 +53,8 @@ const Auth = () => {
       toast.success("Login realizado com sucesso!");
       navigate("/dashboard");
     } catch (error: any) {
-      toast.error(error.message || "Erro ao fazer login");
+      logError(error, 'Login');
+      toast.error(getSafeErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -83,7 +85,8 @@ const Auth = () => {
       toast.success("Cadastro realizado! Você já pode fazer login.");
       setSignupData({ cpf: "", nome: "", email: "", password: "" });
     } catch (error: any) {
-      toast.error(error.message || "Erro ao criar conta");
+      logError(error, 'Signup');
+      toast.error(getSafeErrorMessage(error));
     } finally {
       setLoading(false);
     }

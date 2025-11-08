@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Edit } from "lucide-react";
+import { getSafeErrorMessage, logError } from "@/lib/errorHandler";
 
 interface AlterarAreaDialogProps {
   loteId: string;
@@ -74,7 +75,8 @@ const AlterarAreaDialog = ({ loteId, areaAtual, onAreaAlterada }: AlterarAreaDia
       setNovaArea(areaAtual.toString());
       onAreaAlterada();
     } catch (error: any) {
-      toast.error(error.message || "Erro ao alterar área");
+      logError(error, 'Area Change');
+      toast.error(getSafeErrorMessage(error));
     } finally {
       setLoading(false);
     }

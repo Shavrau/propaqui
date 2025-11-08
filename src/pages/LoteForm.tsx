@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { ArrowLeft, Upload, X } from "lucide-react";
+import { getSafeErrorMessage, logError } from "@/lib/errorHandler";
 
 const LoteForm = () => {
   const navigate = useNavigate();
@@ -111,17 +112,21 @@ const LoteForm = () => {
 
         if (uploadError) throw uploadError;
 
-        const { data: { publicUrl } } = supabase.storage
+        // Get signed URL for private bucket (valid for 1 year)
+        const { data: signedUrlData } = await supabase.storage
           .from("lotes")
-          .getPublicUrl(filePath);
+          .createSignedUrl(filePath, 31536000); // 365 days in seconds
 
-        uploadedUrls.push(publicUrl);
+        if (signedUrlData?.signedUrl) {
+          uploadedUrls.push(signedUrlData.signedUrl);
+        }
       }
 
       setImagens([...imagens, ...uploadedUrls]);
       toast.success("Imagens enviadas com sucesso!");
     } catch (error: any) {
-      toast.error("Erro ao enviar imagens");
+      logError(error, 'Image Upload');
+      toast.error(getSafeErrorMessage(error));
     } finally {
       setUploading(false);
     }
@@ -169,7 +174,8 @@ const LoteForm = () => {
 
       navigate("/lotes");
     } catch (error: any) {
-      toast.error(error.message || "Erro ao salvar lote");
+      logError(error, 'Save Lote');
+      toast.error(getSafeErrorMessage(error));
     } finally {
       setLoading(false);
     }
