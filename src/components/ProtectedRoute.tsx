@@ -16,13 +16,12 @@ const ProtectedRoute = ({ children, requireAdmin = false }: ProtectedRouteProps)
 
   useEffect(() => {
     const checkUserProfile = async (userId: string) => {
-      const { data } = await supabase
-        .from("usuarios")
-        .select("perfil")
-        .eq("id", userId)
-        .single();
+      const { data } = await supabase.rpc('has_role', {
+        _user_id: userId,
+        _role: 'admin'
+      });
       
-      setIsAdmin(data?.perfil === "admin");
+      setIsAdmin(data === true);
       setLoading(false);
     };
 
