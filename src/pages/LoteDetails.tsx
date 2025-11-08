@@ -6,7 +6,7 @@ import AlterarAreaDialog from "@/components/AlterarAreaDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { ArrowLeft, Edit, MapPin, Ruler, Calendar, Plus, History } from "lucide-react";
+import { ArrowLeft, Edit, MapPin, Ruler, Calendar, Plus, History, Construction, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 
 interface Lote {
   id: string;
@@ -427,27 +428,53 @@ const LoteDetails = () => {
                 </p>
               ) : (
                 <div className="space-y-4">
-                  {historicos.map((historico) => (
-                    <div
-                      key={historico.id}
-                      className="p-4 border border-border rounded-lg space-y-2"
-                    >
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Calendar className="h-4 w-4" />
-                        {new Date(historico.data_aprovacao).toLocaleDateString("pt-BR")}
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Área Construída</p>
-                          <p className="text-lg font-semibold">{historico.area_construida} m²</p>
+                  {historicos.map((historico) => {
+                    const areaDiferenca = historico.area_construida - historico.area_demolida;
+                    const isConstrucao = areaDiferenca > 0;
+                    
+                    return (
+                      <div
+                        key={historico.id}
+                        className="p-4 border border-border rounded-lg space-y-3"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Calendar className="h-4 w-4" />
+                            {new Date(historico.data_aprovacao).toLocaleDateString("pt-BR")}
+                          </div>
+                          <Badge variant={isConstrucao ? "default" : "destructive"}>
+                            {isConstrucao ? (
+                              <>
+                                <Construction className="h-3 w-3 mr-1" />
+                                Construção
+                              </>
+                            ) : (
+                              <>
+                                <Trash2 className="h-3 w-3 mr-1" />
+                                Demolição
+                              </>
+                            )}
+                          </Badge>
                         </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Área Demolida</p>
-                          <p className="text-lg font-semibold">{historico.area_demolida} m²</p>
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="space-y-1">
+                            <p className="text-sm text-muted-foreground">Área Construída</p>
+                            <p className="text-lg font-semibold text-green-600">{historico.area_construida} m²</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-sm text-muted-foreground">Área Demolida</p>
+                            <p className="text-lg font-semibold text-red-600">{historico.area_demolida} m²</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-sm text-muted-foreground">Diferença</p>
+                            <p className={`text-lg font-semibold ${areaDiferenca >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {areaDiferenca >= 0 ? '+' : ''}{areaDiferenca} m²
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
