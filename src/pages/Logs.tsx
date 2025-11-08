@@ -38,13 +38,12 @@ const Logs = () => {
   const checkAdminStatus = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      const { data } = await supabase
-        .from("usuarios")
-        .select("perfil")
-        .eq("id", user.id)
-        .single();
+      const { data, error } = await supabase.rpc('has_role', {
+        _user_id: user.id,
+        _role: 'admin'
+      });
       
-      if (data?.perfil !== "admin") {
+      if (error || !data) {
         toast.error("Acesso negado");
         window.location.href = "/dashboard";
       } else {

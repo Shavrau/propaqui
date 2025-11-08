@@ -21,16 +21,22 @@ const Dashboard = () => {
   const loadUserProfile = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      const { data } = await supabase
+      const { data: profileData } = await supabase
         .from("usuarios")
-        .select("nome, perfil")
+        .select("nome")
         .eq("id", user.id)
         .single();
       
-      if (data) {
-        setUserName(data.nome);
-        setIsAdmin(data.perfil === "admin");
+      if (profileData) {
+        setUserName(profileData.nome);
       }
+
+      const { data: roleData } = await supabase.rpc('has_role', {
+        _user_id: user.id,
+        _role: 'admin'
+      });
+      
+      setIsAdmin(roleData === true);
     }
   };
 
