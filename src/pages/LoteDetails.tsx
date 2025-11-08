@@ -46,7 +46,7 @@ interface HistoricoAlteracao {
   alterado_por: string;
   usuarios: {
     nome: string;
-  };
+  } | null;
 }
 
 const LoteDetails = () => {
@@ -365,7 +365,7 @@ const LoteDetails = () => {
                           })}
                         </div>
                         <span className="text-sm text-muted-foreground">
-                          Por: {alteracao.usuarios.nome}
+                          Por: {alteracao.usuarios?.nome || "Usuário não identificado"}
                         </span>
                       </div>
                       <div className="flex items-center gap-4">
