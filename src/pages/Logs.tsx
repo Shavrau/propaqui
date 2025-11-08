@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/table";
 import { toast } from "sonner";
 import { FileText } from "lucide-react";
+import { maskCPF } from "@/lib/utils";
 
 interface LogAcesso {
   id: string;
@@ -129,7 +130,7 @@ const Logs = () => {
                           <TableCell>
                             {new Date(log.data_hora).toLocaleString("pt-BR")}
                           </TableCell>
-                          <TableCell>{log.cpf_usuario}</TableCell>
+                          <TableCell>{maskCPF(log.cpf_usuario)}</TableCell>
                           <TableCell>{log.lotes?.numero_iptu}</TableCell>
                           <TableCell>{log.lotes?.numero_lote}</TableCell>
                           <TableCell>{log.lotes?.loteamento}</TableCell>
