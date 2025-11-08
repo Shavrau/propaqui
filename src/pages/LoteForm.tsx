@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { ArrowLeft, Upload, X } from "lucide-react";
+import { ArrowLeft, Upload, X, Plus, Trash2, Construction } from "lucide-react";
 import { getSafeErrorMessage, logError } from "@/lib/errorHandler";
 
 const LoteForm = () => {
@@ -26,6 +26,11 @@ const LoteForm = () => {
     area_total: "",
   });
   const [imagens, setImagens] = useState<string[]>([]);
+  const [historicos, setHistoricos] = useState<Array<{
+    area_construida: string;
+    area_demolida: string;
+    data_aprovacao: string;
+  }>>([]);
 
   useEffect(() => {
     checkAdminStatus();
@@ -136,6 +141,27 @@ const LoteForm = () => {
     setImagens(imagens.filter((img) => img !== url));
   };
 
+  const addHistorico = () => {
+    setHistoricos([
+      ...historicos,
+      {
+        area_construida: "",
+        area_demolida: "",
+        data_aprovacao: "",
+      },
+    ]);
+  };
+
+  const removeHistorico = (index: number) => {
+    setHistoricos(historicos.filter((_, i) => i !== index));
+  };
+
+  const updateHistorico = (index: number, field: string, value: string) => {
+    const updated = [...historicos];
+    updated[index] = { ...updated[index], [field]: value };
+    setHistoricos(updated);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -155,6 +181,8 @@ const LoteForm = () => {
         created_by: user.id,
       };
 
+      let loteId = id;
+
       if (isEdit) {
         const { error } = await supabase
           .from("lotes")
@@ -162,15 +190,71 @@ const LoteForm = () => {
           .eq("id", id);
 
         if (error) throw error;
-        toast.success("Lote atualizado com sucesso!");
       } else {
-        const { error } = await supabase
+        const { data: newLote, error } = await supabase
           .from("lotes")
-          .insert([loteData]);
+          .insert([loteData])
+          .select()
+          .single();
 
         if (error) throw error;
-        toast.success("Lote cadastrado com sucesso!");
+        loteId = newLote.id;
       }
+
+      // Processar históricos de construção/demolição
+      if (historicos.length > 0 && loteId) {
+        let areaAtual = parseFloat(formData.area_total);
+
+        for (const hist of historicos) {
+          if (!hist.area_construida || !hist.data_aprovacao) continue;
+
+          const areaConstruida = parseFloat(hist.area_construida);
+          const areaDemolida = parseFloat(hist.area_demolida || "0");
+          const areaDiferenca = areaConstruida - areaDemolida;
+          const novaArea = areaAtual + areaDiferenca;
+
+          // Inserir histórico de construção
+          const { error: historicoError } = await supabase
+            .from("historico_construcao")
+            .insert({
+              lote_id: loteId,
+              area_construida: areaConstruida,
+              area_demolida: areaDemolida,
+              data_aprovacao: hist.data_aprovacao,
+            });
+
+          if (historicoError) throw historicoError;
+
+          // Registrar no histórico de alterações
+          const motivo = areaDiferenca > 0 
+            ? `Construção: +${areaConstruida}m² construídos${areaDemolida > 0 ? ` e -${areaDemolida}m² demolidos` : ''}`
+            : `Demolição: -${areaDemolida}m² demolidos${areaConstruida > 0 ? ` e +${areaConstruida}m² construídos` : ''}`;
+
+          const { error: alteracaoError } = await supabase
+            .from("historico_alteracao_area")
+            .insert({
+              lote_id: loteId,
+              area_anterior: areaAtual,
+              area_nova: novaArea,
+              motivo: motivo,
+              alterado_por: user.id,
+            });
+
+          if (alteracaoError) throw alteracaoError;
+
+          // Atualizar área do lote
+          const { error: updateAreaError } = await supabase
+            .from("lotes")
+            .update({ area_total: novaArea })
+            .eq("id", loteId);
+
+          if (updateAreaError) throw updateAreaError;
+
+          areaAtual = novaArea;
+        }
+      }
+
+      toast.success(isEdit ? "Lote atualizado com sucesso!" : "Lote cadastrado com sucesso!");
 
       navigate("/lotes");
     } catch (error: any) {
@@ -287,6 +371,119 @@ const LoteForm = () => {
                       required
                     />
                   </div>
+                </div>
+
+                {/* Histórico de Construção/Demolição */}
+                <div className="space-y-4 pt-4 border-t">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Construction className="h-5 w-5 text-primary" />
+                      <Label className="text-base font-semibold">
+                        Histórico de Construção/Demolição
+                      </Label>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addHistorico}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Adicionar Registro
+                    </Button>
+                  </div>
+
+                  {historicos.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-4 border border-dashed rounded-lg">
+                      Nenhum registro adicionado. Clique em "Adicionar Registro" para incluir construções ou demolições.
+                    </p>
+                  )}
+
+                  {historicos.map((hist, index) => (
+                    <div
+                      key={index}
+                      className="p-4 border border-border rounded-lg space-y-3 bg-muted/30"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium">Registro #{index + 1}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeHistorico(index)}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor={`area_construida_${index}`}>
+                            Área Construída (m²) *
+                          </Label>
+                          <Input
+                            id={`area_construida_${index}`}
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="0.00"
+                            value={hist.area_construida}
+                            onChange={(e) =>
+                              updateHistorico(index, "area_construida", e.target.value)
+                            }
+                            required={historicos.length > 0}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor={`area_demolida_${index}`}>
+                            Área Demolida (m²)
+                          </Label>
+                          <Input
+                            id={`area_demolida_${index}`}
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="0.00"
+                            value={hist.area_demolida}
+                            onChange={(e) =>
+                              updateHistorico(index, "area_demolida", e.target.value)
+                            }
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor={`data_aprovacao_${index}`}>
+                            Data de Aprovação *
+                          </Label>
+                          <Input
+                            id={`data_aprovacao_${index}`}
+                            type="date"
+                            max={new Date().toISOString().split('T')[0]}
+                            value={hist.data_aprovacao}
+                            onChange={(e) =>
+                              updateHistorico(index, "data_aprovacao", e.target.value)
+                            }
+                            required={historicos.length > 0}
+                          />
+                        </div>
+                      </div>
+
+                      {hist.area_construida && (
+                        <div className="p-2 bg-background rounded text-sm">
+                          <span className="text-muted-foreground">Impacto na área: </span>
+                          <span className={`font-semibold ${
+                            (parseFloat(hist.area_construida || "0") - parseFloat(hist.area_demolida || "0")) >= 0
+                              ? "text-green-600"
+                              : "text-red-600"
+                          }`}>
+                            {(parseFloat(hist.area_construida || "0") - parseFloat(hist.area_demolida || "0")) >= 0 ? "+" : ""}
+                            {(parseFloat(hist.area_construida || "0") - parseFloat(hist.area_demolida || "0")).toFixed(2)} m²
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
 
                 <div className="space-y-2">
