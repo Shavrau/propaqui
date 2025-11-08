@@ -164,23 +164,66 @@ const LoteDetails = () => {
   const handleAddHistorico = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const { error } = await supabase.from("historico_construcao").insert([
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
+      const areaConstruida = parseFloat(historicoForm.area_construida);
+      const areaDemolida = parseFloat(historicoForm.area_demolida || "0");
+      const areaDiferenca = areaConstruida - areaDemolida;
+      const areaAtual = lote?.area_total || 0;
+      const novaArea = areaAtual + areaDiferenca;
+
+      if (novaArea < 0) {
+        toast.error("A área total não pode ser negativa após a operação");
+        return;
+      }
+
+      // Inserir histórico de construção
+      const { error: historicoError } = await supabase.from("historico_construcao").insert([
         {
           lote_id: id,
-          area_construida: parseFloat(historicoForm.area_construida),
-          area_demolida: parseFloat(historicoForm.area_demolida || "0"),
+          area_construida: areaConstruida,
+          area_demolida: areaDemolida,
           data_aprovacao: historicoForm.data_aprovacao,
         },
       ]);
 
-      if (error) throw error;
+      if (historicoError) throw historicoError;
 
-      toast.success("Histórico adicionado com sucesso!");
+      // Atualizar área total do lote
+      const { error: updateError } = await supabase
+        .from("lotes")
+        .update({ area_total: novaArea })
+        .eq("id", id);
+
+      if (updateError) throw updateError;
+
+      // Registrar no histórico de alterações de área
+      const motivo = areaDiferenca > 0 
+        ? `Construção: +${areaConstruida}m² construídos${areaDemolida > 0 ? ` e -${areaDemolida}m² demolidos` : ''}`
+        : `Demolição: -${areaDemolida}m² demolidos${areaConstruida > 0 ? ` e +${areaConstruida}m² construídos` : ''}`;
+
+      const { error: alteracaoError } = await supabase
+        .from("historico_alteracao_area")
+        .insert({
+          lote_id: id,
+          area_anterior: areaAtual,
+          area_nova: novaArea,
+          motivo: motivo,
+          alterado_por: user.id,
+        });
+
+      if (alteracaoError) throw alteracaoError;
+
+      toast.success("Histórico adicionado e área atualizada com sucesso!");
       setShowHistoricoDialog(false);
       setHistoricoForm({ area_construida: "", area_demolida: "", data_aprovacao: "" });
+      loadLoteDetails();
       loadHistoricos();
+      loadHistoricosAlteracao();
     } catch (error: any) {
       toast.error("Erro ao adicionar histórico");
+      console.error(error);
     }
   };
 
@@ -373,6 +416,7 @@ const LoteDetails = () => {
                           id="area_construida"
                           type="number"
                           step="0.01"
+                          min="0"
                           value={historicoForm.area_construida}
                           onChange={(e) =>
                             setHistoricoForm({
@@ -389,6 +433,7 @@ const LoteDetails = () => {
                           id="area_demolida"
                           type="number"
                           step="0.01"
+                          min="0"
                           value={historicoForm.area_demolida}
                           onChange={(e) =>
                             setHistoricoForm({
@@ -397,12 +442,18 @@ const LoteDetails = () => {
                             })
                           }
                         />
+                        {lote && historicoForm.area_demolida && parseFloat(historicoForm.area_demolida) > 0 && (
+                          <p className="text-sm text-muted-foreground">
+                            Área após demolição: {(lote.area_total - parseFloat(historicoForm.area_demolida)).toFixed(2)} m²
+                          </p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="data_aprovacao">Data de Aprovação *</Label>
                         <Input
                           id="data_aprovacao"
                           type="date"
+                          max={new Date().toISOString().split('T')[0]}
                           value={historicoForm.data_aprovacao}
                           onChange={(e) =>
                             setHistoricoForm({
@@ -413,8 +464,35 @@ const LoteDetails = () => {
                           required
                         />
                       </div>
+                      
+                      {lote && historicoForm.area_construida && (
+                        <div className="p-3 bg-muted rounded-lg space-y-1">
+                          <p className="text-sm font-medium">Resumo da Alteração:</p>
+                          <p className="text-sm text-muted-foreground">
+                            Área Atual: {lote.area_total} m²
+                          </p>
+                          {historicoForm.area_construida && parseFloat(historicoForm.area_construida) > 0 && (
+                            <p className="text-sm text-green-600">
+                              + {historicoForm.area_construida} m² (construção)
+                            </p>
+                          )}
+                          {historicoForm.area_demolida && parseFloat(historicoForm.area_demolida) > 0 && (
+                            <p className="text-sm text-red-600">
+                              - {historicoForm.area_demolida} m² (demolição)
+                            </p>
+                          )}
+                          <p className="text-sm font-semibold pt-1 border-t">
+                            Nova Área: {(
+                              lote.area_total + 
+                              (historicoForm.area_construida ? parseFloat(historicoForm.area_construida) : 0) - 
+                              (historicoForm.area_demolida ? parseFloat(historicoForm.area_demolida) : 0)
+                            ).toFixed(2)} m²
+                          </p>
+                        </div>
+                      )}
+                      
                       <Button type="submit" className="w-full">
-                        Adicionar Histórico
+                        Adicionar Histórico e Atualizar Área
                       </Button>
                     </form>
                   </DialogContent>
