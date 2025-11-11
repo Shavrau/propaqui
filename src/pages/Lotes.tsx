@@ -58,7 +58,7 @@ const Lotes = () => {
 
   const handleViewLote = (loteId: string) => {
     if (!isAdmin) {
-      toast.error("Apenas administradores podem acessar os detalhes dos lotes");
+      toast.error("Você não tem permissão para visualizar os detalhes. Contate um administrador.");
       navigate("/dashboard");
       return;
     }
