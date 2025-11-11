@@ -38,6 +38,34 @@ const Auth = () => {
     return cpf.replace(/\D/g, "");
   };
 
+  const validateCPF = (cpf: string): boolean => {
+    const cleanedCpf = cpf.replace(/\D/g, "");
+    
+    if (cleanedCpf.length !== 11) return false;
+    
+    // Reject known invalid sequences (all same digits)
+    if (/^(\d)\1{10}$/.test(cleanedCpf)) return false;
+    
+    // Calculate first check digit
+    let sum1 = 0;
+    for (let i = 0; i < 9; i++) {
+      sum1 += parseInt(cleanedCpf[i]) * (10 - i);
+    }
+    let dv1 = 11 - (sum1 % 11);
+    if (dv1 >= 10) dv1 = 0;
+    
+    // Calculate second check digit
+    let sum2 = 0;
+    for (let i = 0; i < 10; i++) {
+      sum2 += parseInt(cleanedCpf[i]) * (11 - i);
+    }
+    let dv2 = 11 - (sum2 % 11);
+    if (dv2 >= 10) dv2 = 0;
+    
+    // Verify check digits match
+    return parseInt(cleanedCpf[9]) === dv1 && parseInt(cleanedCpf[10]) === dv2;
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -66,6 +94,13 @@ const Auth = () => {
 
     try {
       const cpfSemMascara = removeCPFMask(signupData.cpf);
+      
+      // Validate CPF before sending to server
+      if (!validateCPF(cpfSemMascara)) {
+        toast.error("CPF inválido. Por favor, verifique o número digitado.");
+        setLoading(false);
+        return;
+      }
       
       const { error } = await supabase.auth.signUp({
         email: signupData.email,
