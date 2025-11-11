@@ -48,6 +48,19 @@ const Buscar = () => {
     }
   };
 
+  const formatIPTU = (value: string) => {
+    const numbers = value.replace(/\D/g, "");
+    return numbers
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})\d+?$/, "$1");
+  };
+
+  const sanitizeAlphanumeric = (value: string) => {
+    return value.replace(/[^a-zA-Z0-9\s\-]/g, "").toUpperCase();
+  };
+
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -126,8 +139,9 @@ const Buscar = () => {
                       placeholder="000.000.000.000"
                       value={filters.numero_iptu}
                       onChange={(e) =>
-                        setFilters({ ...filters, numero_iptu: e.target.value })
+                        setFilters({ ...filters, numero_iptu: formatIPTU(e.target.value) })
                       }
+                      maxLength={15}
                     />
                   </div>
 
@@ -138,8 +152,9 @@ const Buscar = () => {
                       placeholder="Ex: CAD-12345"
                       value={filters.numero_cadastro}
                       onChange={(e) =>
-                        setFilters({ ...filters, numero_cadastro: e.target.value })
+                        setFilters({ ...filters, numero_cadastro: sanitizeAlphanumeric(e.target.value) })
                       }
+                      maxLength={20}
                     />
                   </div>
 
@@ -150,8 +165,9 @@ const Buscar = () => {
                       placeholder="Nome do loteamento"
                       value={filters.loteamento}
                       onChange={(e) =>
-                        setFilters({ ...filters, loteamento: e.target.value })
+                        setFilters({ ...filters, loteamento: e.target.value.slice(0, 100) })
                       }
+                      maxLength={100}
                     />
                   </div>
 
@@ -161,7 +177,8 @@ const Buscar = () => {
                       id="quadra"
                       placeholder="Ex: A, B, 01"
                       value={filters.quadra}
-                      onChange={(e) => setFilters({ ...filters, quadra: e.target.value })}
+                      onChange={(e) => setFilters({ ...filters, quadra: sanitizeAlphanumeric(e.target.value) })}
+                      maxLength={10}
                     />
                   </div>
 
@@ -172,8 +189,9 @@ const Buscar = () => {
                       placeholder="Ex: 001, 123"
                       value={filters.numero_lote}
                       onChange={(e) =>
-                        setFilters({ ...filters, numero_lote: e.target.value })
+                        setFilters({ ...filters, numero_lote: sanitizeAlphanumeric(e.target.value) })
                       }
+                      maxLength={10}
                     />
                   </div>
                 </div>
