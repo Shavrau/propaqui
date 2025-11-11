@@ -221,7 +221,6 @@ const Buscar = () => {
                     onClick={() => {
                       if (!isAdmin) {
                         toast.error("Apenas administradores podem acessar os detalhes dos lotes");
-                        navigate("/dashboard");
                         return;
                       }
                       navigate(`/lote-detalhes/${lote.id}`);
