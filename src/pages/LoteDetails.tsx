@@ -80,14 +80,7 @@ const LoteDetails = () => {
         _role: 'admin'
       });
       
-      const isUserAdmin = data === true;
-      setIsAdmin(isUserAdmin);
-      
-      // Redirecionar usuários não-admin
-      if (!isUserAdmin) {
-        toast.error("Apenas administradores podem acessar os detalhes dos lotes");
-        navigate("/dashboard");
-      }
+      setIsAdmin(data === true);
     }
   };
 

@@ -218,13 +218,7 @@ const Buscar = () => {
                   <Card
                     key={lote.id}
                     className="hover:shadow-lg transition-all cursor-pointer"
-                    onClick={() => {
-                      if (!isAdmin) {
-                        toast.error("Apenas administradores podem acessar os detalhes dos lotes");
-                        return;
-                      }
-                      navigate(`/lote-detalhes/${lote.id}`);
-                    }}
+                    onClick={() => navigate(`/lote-detalhes/${lote.id}`)}
                   >
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
