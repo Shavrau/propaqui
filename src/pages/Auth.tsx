@@ -7,15 +7,19 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Building2 } from "lucide-react";
+import { Building2, Eye, EyeOff } from "lucide-react";
 import { getSafeErrorMessage, logError } from "@/lib/errorHandler";
 
 const Auth = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [loginData, setLoginData] = useState({ email: "", password: "" });
-  const [signupData, setSignupData] = useState({ cpf: "", nome: "", email: "", password: "" });
+  const [signupData, setSignupData] = useState({ cpf: "", nome: "", email: "", password: "", confirmPassword: "" });
   const [resetEmail, setResetEmail] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showResetForm, setShowResetForm] = useState(false);
 
   useEffect(() => {
     // Check if user is already logged in
@@ -102,6 +106,13 @@ const Auth = () => {
         setLoading(false);
         return;
       }
+
+      // Validate password confirmation
+      if (signupData.password !== signupData.confirmPassword) {
+        toast.error("As senhas não coincidem.");
+        setLoading(false);
+        return;
+      }
       
       const { error } = await supabase.auth.signUp({
         email: signupData.email,
@@ -119,7 +130,7 @@ const Auth = () => {
       if (error) throw error;
 
       toast.success("Cadastro realizado! Você já pode fazer login.");
-      setSignupData({ cpf: "", nome: "", email: "", password: "" });
+      setSignupData({ cpf: "", nome: "", email: "", password: "", confirmPassword: "" });
     } catch (error: any) {
       logError(error, 'Signup');
       toast.error(getSafeErrorMessage(error));
@@ -162,14 +173,14 @@ const Auth = () => {
           <CardDescription>Entre com suas credenciais ou crie uma nova conta</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="signup">Cadastro</TabsTrigger>
-              <TabsTrigger value="reset">Recuperar</TabsTrigger>
-            </TabsList>
+          {!showResetForm ? (
+            <Tabs defaultValue="login" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="login">Login</TabsTrigger>
+                <TabsTrigger value="signup">Cadastro</TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="login">
+              <TabsContent value="login">
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="login-email">Email</Label>
@@ -186,14 +197,31 @@ const Auth = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="login-password">Senha</Label>
-                  <Input
-                    id="login-password"
-                    type="password"
-                    placeholder="Digite sua senha"
-                    value={loginData.password}
-                    onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-                    required
-                  />
+                  <div className="relative">
+                    <Input
+                      id="login-password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Digite sua senha"
+                      value={loginData.password}
+                      onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                      required
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowResetForm(true)}
+                    className="text-sm text-primary hover:underline"
+                  >
+                    Esqueceu sua senha?
+                  </button>
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "Entrando..." : "Entrar"}
@@ -239,23 +267,63 @@ const Auth = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-password">Senha</Label>
-                  <Input
-                    id="signup-password"
-                    type="password"
-                    placeholder="Mínimo 6 caracteres"
-                    value={signupData.password}
-                    onChange={(e) => setSignupData({ ...signupData, password: e.target.value })}
-                    minLength={6}
-                    required
-                  />
+                  <div className="relative">
+                    <Input
+                      id="signup-password"
+                      type={showSignupPassword ? "text" : "password"}
+                      placeholder="Mínimo 6 caracteres"
+                      value={signupData.password}
+                      onChange={(e) => setSignupData({ ...signupData, password: e.target.value })}
+                      minLength={6}
+                      required
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowSignupPassword(!showSignupPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showSignupPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signup-confirm-password">Confirmar Senha</Label>
+                  <div className="relative">
+                    <Input
+                      id="signup-confirm-password"
+                      type={showConfirmPassword ? "text" : "password"}
+                      placeholder="Digite a senha novamente"
+                      value={signupData.confirmPassword}
+                      onChange={(e) => setSignupData({ ...signupData, confirmPassword: e.target.value })}
+                      minLength={6}
+                      required
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "Criando conta..." : "Criar Conta"}
                 </Button>
               </form>
             </TabsContent>
-
-            <TabsContent value="reset">
+            </Tabs>
+          ) : (
+            <div className="space-y-4">
+              <Button
+                variant="ghost"
+                onClick={() => setShowResetForm(false)}
+                className="mb-4"
+              >
+                ← Voltar para login
+              </Button>
               <form onSubmit={handleResetPassword} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="reset-email">Email</Label>
@@ -275,8 +343,8 @@ const Auth = () => {
                   {loading ? "Enviando..." : "Enviar Email de Recuperação"}
                 </Button>
               </form>
-            </TabsContent>
-          </Tabs>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
