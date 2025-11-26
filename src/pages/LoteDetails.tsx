@@ -364,9 +364,6 @@ const LoteDetails = () => {
                             minute: "2-digit",
                           })}
                         </div>
-                        <span className="text-sm text-muted-foreground">
-                          Por: {alteracao.usuarios?.nome || "Usuário não identificado"}
-                        </span>
                       </div>
                       <div className="flex items-center gap-4">
                         <div>
