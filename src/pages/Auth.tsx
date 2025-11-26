@@ -316,14 +316,13 @@ const Auth = () => {
             </TabsContent>
             </Tabs>
           ) : (
-            <div className="space-y-4">
-              <Button
-                variant="ghost"
-                onClick={() => setShowResetForm(false)}
-                className="mb-4"
-              >
-                ← Voltar para login
-              </Button>
+            <div className="space-y-6 pt-6">
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold">Recuperar Senha</h3>
+                <p className="text-sm text-muted-foreground">
+                  Digite seu email para receber o link de recuperação
+                </p>
+              </div>
               <form onSubmit={handleResetPassword} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="reset-email">Email</Label>
@@ -336,11 +335,16 @@ const Auth = () => {
                     required
                   />
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Enviaremos um link para redefinir sua senha.
-                </p>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "Enviando..." : "Enviar Email de Recuperação"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setShowResetForm(false)}
+                  className="w-full"
+                >
+                  Voltar para login
                 </Button>
               </form>
             </div>
