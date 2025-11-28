@@ -99,18 +99,21 @@ export type Database = {
       }
       log_acesso: {
         Row: {
+          consentido: boolean | null
           cpf_usuario: string
           data_hora: string | null
           id: string
           lote_id: string
         }
         Insert: {
+          consentido?: boolean | null
           cpf_usuario: string
           data_hora?: string | null
           id?: string
           lote_id: string
         }
         Update: {
+          consentido?: boolean | null
           cpf_usuario?: string
           data_hora?: string | null
           id?: string
@@ -196,28 +199,37 @@ export type Database = {
       }
       usuarios: {
         Row: {
+          consentimento_lgpd: boolean | null
           cpf: string
           created_at: string | null
+          data_consentimento: string | null
           email: string | null
           id: string
           nome: string
           perfil: string
+          versao_politica_privacidade: string | null
         }
         Insert: {
+          consentimento_lgpd?: boolean | null
           cpf: string
           created_at?: string | null
+          data_consentimento?: string | null
           email?: string | null
           id: string
           nome: string
           perfil?: string
+          versao_politica_privacidade?: string | null
         }
         Update: {
+          consentimento_lgpd?: boolean | null
           cpf?: string
           created_at?: string | null
+          data_consentimento?: string | null
           email?: string | null
           id?: string
           nome?: string
           perfil?: string
+          versao_politica_privacidade?: string | null
         }
         Relationships: []
       }
@@ -226,6 +238,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      anonimizar_logs_antigos: { Args: never; Returns: undefined }
       get_user_perfil: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
@@ -234,6 +247,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      limpar_logs_antigos: { Args: never; Returns: undefined }
       validate_cpf: { Args: { cpf: string }; Returns: boolean }
     }
     Enums: {

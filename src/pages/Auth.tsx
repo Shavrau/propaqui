@@ -1,14 +1,16 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Building2, Eye, EyeOff } from "lucide-react";
 import { getSafeErrorMessage, logError } from "@/lib/errorHandler";
+import { VERSAO_POLITICA_ATUAL } from "./PoliticaPrivacidade";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -20,6 +22,8 @@ const Auth = () => {
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showResetForm, setShowResetForm] = useState(false);
+  const [aceitouPolitica, setAceitouPolitica] = useState(false);
+  const [aceitouLogs, setAceitouLogs] = useState(false);
 
   useEffect(() => {
     // Check if user is already logged in
@@ -98,6 +102,13 @@ const Auth = () => {
     setLoading(true);
 
     try {
+      // Validate consent
+      if (!aceitouPolitica) {
+        toast.error("Você precisa aceitar a Política de Privacidade para continuar.");
+        setLoading(false);
+        return;
+      }
+
       const cpfSemMascara = removeCPFMask(signupData.cpf);
       
       // Validate CPF before sending to server
@@ -114,7 +125,7 @@ const Auth = () => {
         return;
       }
       
-      const { error } = await supabase.auth.signUp({
+      const { error, data } = await supabase.auth.signUp({
         email: signupData.email,
         password: signupData.password,
         options: {
@@ -123,14 +134,31 @@ const Auth = () => {
             cpf: cpfSemMascara,
             nome: signupData.nome,
             perfil: "usuario",
+            consentimento_lgpd: aceitouPolitica,
+            consentimento_logs: aceitouLogs,
+            versao_politica: VERSAO_POLITICA_ATUAL,
           },
         },
       });
 
       if (error) throw error;
 
+      // Update user consent in usuarios table after signup
+      if (data.user) {
+        await supabase
+          .from('usuarios')
+          .update({
+            consentimento_lgpd: aceitouPolitica,
+            data_consentimento: new Date().toISOString(),
+            versao_politica_privacidade: VERSAO_POLITICA_ATUAL,
+          })
+          .eq('id', data.user.id);
+      }
+
       toast.success("Cadastro realizado! Você já pode fazer login.");
       setSignupData({ cpf: "", nome: "", email: "", password: "", confirmPassword: "" });
+      setAceitouPolitica(false);
+      setAceitouLogs(false);
     } catch (error: any) {
       logError(error, 'Signup');
       toast.error(getSafeErrorMessage(error));
@@ -309,7 +337,47 @@ const Auth = () => {
                     </button>
                   </div>
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
+
+                {/* Consentimento LGPD */}
+                <div className="space-y-3 pt-2 border-t">
+                  <div className="flex items-start space-x-3">
+                    <Checkbox
+                      id="aceito-politica"
+                      checked={aceitouPolitica}
+                      onCheckedChange={(checked) => setAceitouPolitica(checked === true)}
+                      className="mt-1"
+                    />
+                    <Label htmlFor="aceito-politica" className="text-sm leading-relaxed cursor-pointer">
+                      Li e aceito a{" "}
+                      <Link
+                        to="/politica-privacidade"
+                        className="text-primary hover:underline font-medium"
+                        target="_blank"
+                      >
+                        Política de Privacidade
+                      </Link>{" "}
+                      e autorizo o tratamento dos meus dados pessoais conforme descrito.
+                      <span className="text-destructive">*</span>
+                    </Label>
+                  </div>
+
+                  <div className="flex items-start space-x-3">
+                    <Checkbox
+                      id="aceito-logs"
+                      checked={aceitouLogs}
+                      onCheckedChange={(checked) => setAceitouLogs(checked === true)}
+                      className="mt-1"
+                    />
+                    <Label htmlFor="aceito-logs" className="text-sm leading-relaxed cursor-pointer">
+                      Autorizo o registro de logs de acesso aos lotes para fins de auditoria e segurança.
+                      <span className="text-muted-foreground text-xs block mt-1">
+                        (Opcional - você pode usar o sistema sem este consentimento)
+                      </span>
+                    </Label>
+                  </div>
+                </div>
+
+                <Button type="submit" className="w-full" disabled={loading || !aceitouPolitica}>
                   {loading ? "Criando conta..." : "Criar Conta"}
                 </Button>
               </form>
