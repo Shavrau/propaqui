@@ -12,6 +12,7 @@ import LoteForm from "./pages/LoteForm";
 import LoteDetails from "./pages/LoteDetails";
 import Buscar from "./pages/Buscar";
 import Logs from "./pages/Logs";
+import PoliticaPrivacidade from "./pages/PoliticaPrivacidade";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -25,6 +26,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
           <Route
             path="/dashboard"
             element={
