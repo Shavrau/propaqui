@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, MapPin, Ruler, Building2 } from "lucide-react";
 import { toast } from "sonner";
+import { maskIPTU } from "@/lib/utils";
 
 interface Lote {
   id: string;
@@ -131,7 +132,7 @@ const Lotes = () => {
                   <CardContent className="space-y-2">
                     <div className="space-y-1">
                       <p className="text-sm text-muted-foreground">IPTU</p>
-                      <p className="font-medium">{lote.numero_iptu}</p>
+                      <p className="font-medium">{isAdmin ? lote.numero_iptu : maskIPTU(lote.numero_iptu)}</p>
                     </div>
                     <div className="space-y-1">
                       <p className="text-sm text-muted-foreground">Loteamento</p>
