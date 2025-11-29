@@ -149,6 +149,7 @@ const Auth = () => {
           .from('usuarios')
           .update({
             consentimento_lgpd: aceitouPolitica,
+            consentimento_logs: aceitouLogs,
             data_consentimento: new Date().toISOString(),
             versao_politica_privacidade: VERSAO_POLITICA_ATUAL,
           })

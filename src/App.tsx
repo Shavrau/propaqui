@@ -13,6 +13,7 @@ import LoteDetails from "./pages/LoteDetails";
 import Buscar from "./pages/Buscar";
 import Logs from "./pages/Logs";
 import PoliticaPrivacidade from "./pages/PoliticaPrivacidade";
+import MeusDados from "./pages/MeusDados";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -80,6 +81,14 @@ const App = () => (
             element={
               <ProtectedRoute requireAdmin>
                 <Logs />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/meus-dados"
+            element={
+              <ProtectedRoute>
+                <MeusDados />
               </ProtectedRoute>
             }
           />

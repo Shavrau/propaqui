@@ -7,7 +7,8 @@ import {
   Search, 
   LogOut, 
   ChevronLeft,
-  Users
+  Users,
+  UserCog
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,6 +37,7 @@ const Sidebar = ({ isAdmin }: SidebarProps) => {
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, admin: false },
     { title: "Lotes", url: "/lotes", icon: Building2, admin: false },
     { title: "Buscar", url: "/buscar", icon: Search, admin: false },
+    { title: "Meus Dados", url: "/meus-dados", icon: UserCog, admin: false },
     { title: "Logs de Acesso", url: "/logs", icon: FileText, admin: true },
   ];
 
