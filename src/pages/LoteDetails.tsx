@@ -142,16 +142,15 @@ const LoteDetails = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Buscar dados do usuário incluindo consentimento para logs
+      // Buscar dados do usuário incluindo consentimento específico para logs
       const { data: userData } = await supabase
         .from("usuarios")
-        .select("cpf, consentimento_lgpd")
+        .select("cpf, consentimento_logs")
         .eq("id", user.id)
         .single();
 
-      // Só cria log se o usuário consentiu com o registro de logs
-      // O consentimento para logs é implícito quando aceita a política de privacidade
-      if (userData && userData.consentimento_lgpd) {
+      // Só cria log se o usuário consentiu especificamente com o registro de logs
+      if (userData && userData.consentimento_logs) {
         await supabase.from("log_acesso").insert([
           {
             cpf_usuario: userData.cpf,

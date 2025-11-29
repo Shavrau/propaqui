@@ -200,6 +200,7 @@ export type Database = {
       usuarios: {
         Row: {
           consentimento_lgpd: boolean | null
+          consentimento_logs: boolean | null
           cpf: string
           created_at: string | null
           data_consentimento: string | null
@@ -211,6 +212,7 @@ export type Database = {
         }
         Insert: {
           consentimento_lgpd?: boolean | null
+          consentimento_logs?: boolean | null
           cpf: string
           created_at?: string | null
           data_consentimento?: string | null
@@ -222,6 +224,7 @@ export type Database = {
         }
         Update: {
           consentimento_lgpd?: boolean | null
+          consentimento_logs?: boolean | null
           cpf?: string
           created_at?: string | null
           data_consentimento?: string | null
