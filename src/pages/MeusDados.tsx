@@ -187,27 +187,6 @@ const MeusDados = () => {
     }
   };
 
-  const handleRevokeConsent = async () => {
-    if (!userData) return;
-
-    try {
-      const { error } = await supabase
-        .from("usuarios")
-        .update({
-          consentimento_logs: false,
-        })
-        .eq("id", userData.id);
-
-      if (error) throw error;
-
-      setConsentimentoLogs(false);
-      setUserData({ ...userData, consentimento_logs: false });
-      toast.success("Consentimento para registro de logs revogado!");
-    } catch (error) {
-      console.error("Erro ao revogar consentimento:", error);
-      toast.error("Erro ao revogar consentimento");
-    }
-  };
 
   if (loading) {
     return (
@@ -315,11 +294,11 @@ const MeusDados = () => {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between p-4 border rounded-lg">
+              <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
                 <div className="space-y-1">
                   <Label className="font-medium">Registro de Logs de Acesso</Label>
                   <p className="text-sm text-muted-foreground">
-                    Permite o registro de suas atividades para auditoria
+                    Registro obrigatório de suas atividades para auditoria e segurança
                   </p>
                   {userData?.data_consentimento && (
                     <p className="text-xs text-muted-foreground">
@@ -327,19 +306,8 @@ const MeusDados = () => {
                     </p>
                   )}
                 </div>
-                <div className="flex items-center gap-4">
-                  <Switch
-                    checked={consentimentoLogs}
-                    onCheckedChange={(checked) => {
-                      setConsentimentoLogs(checked);
-                      if (!checked) {
-                        handleRevokeConsent();
-                      }
-                    }}
-                  />
-                  <span className="text-sm">
-                    {consentimentoLogs ? "Ativado" : "Desativado"}
-                  </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-primary font-medium">Obrigatório</span>
                 </div>
               </div>
             </CardContent>

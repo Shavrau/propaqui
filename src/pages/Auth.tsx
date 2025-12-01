@@ -102,9 +102,15 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      // Validate consent
+      // Validate consent - both are required
       if (!aceitouPolitica) {
         toast.error("Você precisa aceitar a Política de Privacidade para continuar.");
+        setLoading(false);
+        return;
+      }
+
+      if (!aceitouLogs) {
+        toast.error("O consentimento para registro de logs é obrigatório para uso do sistema.");
         setLoading(false);
         return;
       }
@@ -371,14 +377,15 @@ const Auth = () => {
                     />
                     <Label htmlFor="aceito-logs" className="text-sm leading-relaxed cursor-pointer">
                       Autorizo o registro de logs de acesso aos lotes para fins de auditoria e segurança.
+                      <span className="text-destructive">*</span>
                       <span className="text-muted-foreground text-xs block mt-1">
-                        (Opcional - você pode usar o sistema sem este consentimento)
+                        (Obrigatório para uso do sistema)
                       </span>
                     </Label>
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full" disabled={loading || !aceitouPolitica}>
+                <Button type="submit" className="w-full" disabled={loading || !aceitouPolitica || !aceitouLogs}>
                   {loading ? "Criando conta..." : "Criar Conta"}
                 </Button>
               </form>
