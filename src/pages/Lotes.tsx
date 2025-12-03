@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, MapPin, Ruler, Building2 } from "lucide-react";
 import { toast } from "sonner";
-import { maskIPTU } from "@/lib/utils";
 
 interface Lote {
   id: string;
@@ -57,15 +56,6 @@ const Lotes = () => {
     }
   };
 
-  const handleViewLote = (loteId: string) => {
-    if (!isAdmin) {
-      toast.error("Para acessar detalhes de lotes, utilize a função de busca. A lista completa é restrita a administradores.");
-      navigate("/dashboard");
-      return;
-    }
-    navigate(`/lote/${loteId}`);
-  };
-
   if (loading) {
     return (
       <div className="flex min-h-screen">
@@ -73,6 +63,32 @@ const Lotes = () => {
         <div className="flex-1 flex items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>
+      </div>
+    );
+  }
+
+  // Usuários comuns não têm acesso à listagem completa
+  if (!isAdmin) {
+    return (
+      <div className="flex min-h-screen bg-background">
+        <Sidebar isAdmin={isAdmin} />
+        <main className="flex-1 p-8">
+          <div className="max-w-7xl mx-auto">
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <Building2 className="h-16 w-16 text-muted-foreground mb-4" />
+                <h3 className="text-xl font-semibold mb-2">Acesso Restrito</h3>
+                <p className="text-muted-foreground mb-4 text-center max-w-md">
+                  A listagem completa de lotes é restrita a administradores. 
+                  Utilize a função de busca para encontrar lotes específicos.
+                </p>
+                <Button onClick={() => navigate("/buscar")}>
+                  Ir para Busca
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </main>
       </div>
     );
   }
@@ -89,12 +105,10 @@ const Lotes = () => {
                 Visualize e gerencie todos os lotes do sistema
               </p>
             </div>
-            {isAdmin && (
-              <Button onClick={() => navigate("/lote/novo")} size="lg">
-                <Plus className="mr-2 h-5 w-5" />
-                Novo Lote
-              </Button>
-            )}
+            <Button onClick={() => navigate("/lote/novo")} size="lg">
+              <Plus className="mr-2 h-5 w-5" />
+              Novo Lote
+            </Button>
           </div>
 
           {lotes.length === 0 ? (
@@ -103,16 +117,12 @@ const Lotes = () => {
                 <Building2 className="h-16 w-16 text-muted-foreground mb-4" />
                 <h3 className="text-xl font-semibold mb-2">Nenhum lote cadastrado</h3>
                 <p className="text-muted-foreground mb-4">
-                  {isAdmin 
-                    ? "Comece cadastrando o primeiro lote do sistema."
-                    : "Aguarde o cadastro de lotes pelos administradores."}
+                  Comece cadastrando o primeiro lote do sistema.
                 </p>
-                {isAdmin && (
-                  <Button onClick={() => navigate("/lote/novo")}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Cadastrar Primeiro Lote
-                  </Button>
-                )}
+                <Button onClick={() => navigate("/lote/novo")}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Cadastrar Primeiro Lote
+                </Button>
               </CardContent>
             </Card>
           ) : (
@@ -121,7 +131,7 @@ const Lotes = () => {
                 <Card
                   key={lote.id}
                   className="hover:shadow-lg transition-all cursor-pointer"
-                  onClick={() => handleViewLote(lote.id)}
+                  onClick={() => navigate(`/lote/${lote.id}`)}
                 >
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -132,7 +142,7 @@ const Lotes = () => {
                   <CardContent className="space-y-2">
                     <div className="space-y-1">
                       <p className="text-sm text-muted-foreground">IPTU</p>
-                      <p className="font-medium">{isAdmin ? lote.numero_iptu : maskIPTU(lote.numero_iptu)}</p>
+                      <p className="font-medium">{lote.numero_iptu}</p>
                     </div>
                     <div className="space-y-1">
                       <p className="text-sm text-muted-foreground">Loteamento</p>
